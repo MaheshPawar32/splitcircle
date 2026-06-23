@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete Account — SplitCircle</title>
+<style>
+  :root {
+    --primary: #146E8C;
+    --primary-dark: #0D5066;
+    --text: #0F2A33;
+    --muted: #5C7480;
+    --border: #E0EAEE;
+    --bg: #F1F7F9;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 560px; margin: 0 auto; padding: 24px; }
+  header {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    color: #fff; border-radius: 18px; padding: 28px; text-align: center;
+    margin-bottom: 20px;
+  }
+  .logo {
+    width: 52px; height: 52px; border-radius: 14px; background: rgba(255,255,255,.18);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 20px; margin-bottom: 10px;
+  }
+  header h1 { margin: 6px 0 0; font-size: 22px; }
+  .card {
+    background: #fff; border: 1px solid var(--border); border-radius: 16px;
+    padding: 24px; margin-bottom: 16px;
+  }
+  h2 { font-size: 16px; margin: 0 0 10px; color: var(--primary); }
+  ol, ul { margin: 0 0 0 18px; padding: 0; color: var(--text); }
+  li { margin: 6px 0; }
+  label { display: block; font-weight: 600; margin: 14px 0 6px; }
+  input[type=email] {
+    width: 100%; padding: 13px 14px; border: 1px solid var(--border);
+    border-radius: 10px; font-size: 15px;
+  }
+  button {
+    width: 100%; margin-top: 16px; padding: 14px; border: 0; border-radius: 12px;
+    background: var(--primary); color: #fff; font-size: 15px; font-weight: 700;
+    cursor: pointer;
+  }
+  button:disabled { opacity: .6; cursor: default; }
+  .note { color: var(--muted); font-size: 13px; }
+  .warn {
+    background: #FFE4E6; border-left: 4px solid #F43F5E; border-radius: 8px;
+    padding: 12px 14px; font-size: 14px; margin-top: 8px;
+  }
+  #status { margin-top: 14px; font-weight: 600; }
+  #status.ok { color: #10B981; }
+  #status.err { color: #F43F5E; }
+  footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">SC</div>
+    <h1>Delete your SplitCircle account</h1>
+  </header>
+
+  <div class="card">
+    <h2>Option 1 — In the app (fastest)</h2>
+    <ol>
+      <li>Open SplitCircle and sign in.</li>
+      <li>Go to <strong>Settings → Account → Delete account</strong>.</li>
+      <li>Confirm. Your account and data are removed immediately.</li>
+    </ol>
+  </div>
+
+  <div class="card">
+    <h2>Option 2 — Request from the web</h2>
+    <p class="note">Enter the email address on your SplitCircle account. We'll send a
+      confirmation link to that address — tap it to permanently delete your account.</p>
+    <div class="warn">This permanently deletes your profile and personal data and
+      <strong>cannot be undone</strong>. Expenses you added to shared groups remain
+      visible to other members for their records.</div>
+    <form id="form">
+      <label for="email">Account email</label>
+      <input id="email" type="email" required placeholder="you@example.com" autocomplete="email">
+      <button id="btn" type="submit">Send deletion link</button>
+    </form>
+    <div id="status"></div>
+  </div>
+
+  <div class="card">
+    <h2>What gets deleted</h2>
+    <ul>
+      <li>Your profile (name, email, photo, preferences) and login.</li>
+      <li>Friend links, settlements you created, device push token.</li>
+      <li>Crash/analytics identifiers are dissociated and purged within 90 days.</li>
+    </ul>
+    <p class="note">Questions? Email <a href="mailto:support@splitcircle.app">support</a>.
+      See our <a href="privacy.html">Privacy Policy</a>.</p>
+  </div>
+
+  <footer>SplitCircle · Split smart, stay connected</footer>
+</div>
+
+<script>
+  // Supabase project endpoint (anon/publishable key is safe to expose).
+  // If you change Supabase projects, update these two values.
+  var SUPABASE_URL = "https://osvthfilhkenyjowwpuo.supabase.co";
+  var SUPABASE_ANON = "sb_publishable_kqFVD8R547aSBLHIIC9y9w_AjmD8ViY";
+
+  var form = document.getElementById("form");
+  var btn = document.getElementById("btn");
+  var status = document.getElementById("status");
+
+  form.addEventListener("submit", function (e) {
+    e.preventDefault();
+    var email = document.getElementById("email").value.trim();
+    btn.disabled = true; btn.textContent = "Sending…"; status.textContent = "";
+    fetch(SUPABASE_URL + "/functions/v1/request-account-deletion", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "apikey": SUPABASE_ANON,
+        "authorization": "Bearer " + SUPABASE_ANON
+      },
+      body: JSON.stringify({ email: email })
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      status.className = "ok";
+      status.textContent = d.message ||
+        "If an account exists for that email, we've sent a confirmation link.";
+      form.reset();
+    }).catch(function () {
+      status.className = "err";
+      status.textContent = "Something went wrong. Please try again later.";
+    }).finally(function () {
+      btn.disabled = false; btn.textContent = "Send deletion link";
+    });
+  });
+</script>
+</body>
+</html>
